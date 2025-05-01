@@ -56,6 +56,54 @@ int main(void) {
 
 
 
+    //access code 
+
+    /*
+    set a predetermined "correct" code and "incorrect" code
+    keypad presses -> lcd display (set char limit) 
+                    (either display one at a time as you type or all at once after limit)
+    if INCORRECT
+        lcd TRY AGAIN
+        wrong counter++
+        if wrong counter = 3
+            error buzzer
+            "WRONG CODE
+            SECURITY!!!"
+            program ends
+    if CORRECT
+        "WELCOME"
+    */
+
+    //floor picker
+
+    /*
+    lcd_string_write ("DIRECTION?");
+    lcd_set_address(LINE2)
+    lcd_string write("PB1") + UP Arrow(?) + ("PB2") + DOWN Arrow(?)
+
+    if (g_pb1_pressed)
+    {
+        set_floors to 6 -> 10
+        [ function to select the floor]
+            potentiometer to pick floor
+            (optional) doors close
+            Red LED on, Green LED off
+            once floor picked, leds count up to that floor
+                (optional) if CLOSE button held, doors count to floor and stay closed
+                           if OPEN button held, doors do not close and LEDS don't move
+            GREEN Led on
+            (optional) doors open
+            ding sound
+            program asks if thhis is the correct floor
+                if yes, end program and (optional) close door
+                if no, repeat the whole process
+    }
+
+    if (g_pb2_pressed) set floors to B -> 4 + repeat process above
+    */
+
+
+
     while (1);
 }
 
@@ -182,3 +230,6 @@ void GROUP1_IRQHandler(void) // Credit to you (aka Prof. Link)
         }
     } while (group_gpio_iidx != 0);
 }
+
+
+
