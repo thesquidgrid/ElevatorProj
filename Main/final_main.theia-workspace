@@ -1,0 +1,22 @@
+{
+  "folders": [
+    {
+      "path": "file:///c%3A/Users/starc/OneDrive/Desktop/CSC202%20PROJECT"
+    },
+    {
+      "path": ""
+    }
+  ],
+  "settings": {},
+  "launch": {
+    "version": "0.2.0",
+    "configurations": [
+      {
+        "name": "lab10_p2",
+        "type": "ccs-debug",
+        "request": "launch",
+        "project": "lab10_p2"
+      }
+    ]
+  }
+}
