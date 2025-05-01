@@ -1,11 +1,11 @@
 //*****************************************************************************
 //*****************************    C Source Code    ***************************
 //*****************************************************************************
-//  DESIGNER NAME:  Sophia Buchman
+//  DESIGNER NAME:  Sophia Buchman & Rusquel Ramirez
 //
-//       LAB NAME:  lab 10 part 2
+//       LAB NAME:  Final Project
 //
-//      FILE NAME:  lab10_p2_main.c
+//      FILE NAME:  final_main.c
 //
 //-----------------------------------------------------------------------------
 //
@@ -20,11 +20,11 @@
 // Loads standard C include files
 //-----------------------------------------------------------------------------
 
+#include "ti/devices/msp/m0p/mspm0g350x.h"
+#include "ti/devices/msp/peripherals/hw_gpio.h"
+#include "ti/devices/msp/peripherals/m0p/hw_cpuss.h"
 #include <stdio.h>
 #include <stdbool.h>
-
-#define enter      '\r'
-#define backspace  '\b'
 
 #include <ti/devices/msp/msp.h>
 
@@ -36,79 +36,27 @@
 #include "uart.h"
 
 void msp_printf(char * buffer, unsigned int value);
-bool is_valid_option(char c);
-int celsius_to_fahrenheit(int temp);
-void printMenu(void);
-void flashLEDS(void);
+void config_pb1_interrupt(void);
+void config_pb2_interrupt(void);
+void GROUP1_IRQHandler(void);
+
+bool g_pb1_pressed = false;
+bool g_pb2_pressed = false;
 
 int main(void) {
-   clock_init_40mhz();
-   launchpad_gpio_init();
+    clock_init_40mhz();
+    launchpad_gpio_init();
+    dipsw_init();
+    I2C_init();
+    lcd1602_init();
+    UART_init(115200);
+    led_init();
+    seg7_init();
 
-   I2C_init();
-   lcd1602_init();
-   UART_init(115200);
-   led_init();
-   seg7_init();
-   ADC0_init(ADC12_MEMCTL_VRSEL_INTREF_VSSA);
 
-   char currentChar = ' ';
-   uint8_t seg7Counter = 0;
-   uint32_t temp = 0;
 
-   seg7_hex(seg7Counter, 0);
 
-   while (currentChar != '4') {
-      printMenu();
-      
-      currentChar = UART_in_char();
-      UART_out_char(currentChar);  // Echo input
-
-      while (!is_valid_option(currentChar)) {
-         msp_printf("\nInvalid Input. Try again: ", 0);
-         currentChar = UART_in_char();
-         UART_out_char(currentChar);
-      }
-
-      switch (currentChar) {
-         case '1':
-            seg7Counter++;
-            if(seg7Counter > 9){
-                seg7Counter = 0;
-            }
-            seg7_hex(seg7Counter, 0);
-            
-            break;
-
-         case '2':
-            temp = ADC0_in(ADC12_MEMCTL_CHANSEL_CHAN_5);
-            temp = thermistor_calc_temperature(temp);
-            temp = celsius_to_fahrenheit(temp);
-
-            lcd_set_ddram_addr(LCD_LINE_NUM_1);
-            lcd_write_string("Temp: ");
-            lcd_write_byte(temp);
-            lcd1602_write(LCD_IIC_ADDRESS, 0xDF, LCD_DATA_REG); // Degree symbol
-            break;
-
-         case '3':
-            seg7_off();
-            flashLEDS();
-            seg7_hex(seg7Counter, 0);
-            
-            break;
-
-         case '4':
-            msp_printf("\nProgram End\r\n", 0);
-            break;
-      }
-   }
-
-   lcd_clear();
-   lcd_set_ddram_addr(LCD_LINE_NUM_1);
-   lcd_write_string("Program Done");
-
-   while (1);
+    while (1);
 }
 
 //-----------------------------------------------------------------------------
@@ -134,87 +82,103 @@ void msp_printf(char * buffer, unsigned int value) {
    }
 }
 
+
 //-----------------------------------------------------------------------------
 // DESCRIPTION:
-//    Validates if the input character is a valid menu option ('1' to '4').
+//     This function configures an interrupt button for push button PB1. It sets
+//     the interrupy to trigger on the rising edge, ensure the interrupt bit is 
+//     cleared, unmasks the interruptto allow it, and sets the priority and 
+//     enables the interrupt in the NVIC.
 //
 // INPUT PARAMETERS:
-//    char c - Character to validate.
+//  none
 //
 // OUTPUT PARAMETERS:
-//    none
+//  none
 //
 // RETURN:
-//    bool - true if valid option, false otherwise.
-//-----------------------------------------------------------------------------
-bool is_valid_option(char c) {
-   return c == '1' || c == '2' || c == '3' || c == '4';
+//  none
+// -----------------------------------------------------------------------------
+void config_pb1_interrupt(void)  // Credit to you (aka Prof. Link)
+{
+    GPIOB->POLARITY31_16 = GPIO_POLARITY31_16_DIO18_RISE;
+    GPIOB->CPU_INT.ICLR = GPIO_CPU_INT_ICLR_DIO18_CLR;
+
+    GPIOB->CPU_INT.IMASK = GPIO_CPU_INT_IMASK_DIO18_SET;
+
+    NVIC_SetPriority(GPIOB_INT_IRQn, 2);
+    NVIC_EnableIRQ(GPIOB_INT_IRQn);
 }
 
 //-----------------------------------------------------------------------------
 // DESCRIPTION:
-//    Converts a temperature from Celsius to Fahrenheit.
-//    Uses the formula: (temp * 9/5) + 32.
+//     This function configures an interrupt button for push button PB2. It sets
+//     the interrupy to trigger on the rising edge, ensure the interrupt bit is 
+//     cleared, unmasks the interruptto allow it, and sets the priority and 
+//     enables the interrupt in the NVIC.
 //
 // INPUT PARAMETERS:
-//    int temp - Temperature in Celsius.
+//  none
 //
 // OUTPUT PARAMETERS:
-//    none
+//  none
 //
 // RETURN:
-//    int - Temperature in Fahrenheit.
-//-----------------------------------------------------------------------------
-int celsius_to_fahrenheit(int temp) {
-   return ((temp * 9.0 / 5.0) + 32.0);
+//  none
+// -----------------------------------------------------------------------------
+void config_pb2_interrupt(void)  // Credit to you (aka Prof. Link)
+{
+    GPIOA->POLARITY15_0 = GPIO_POLARITY15_0_DIO15_RISE;
+    GPIOA->CPU_INT.ICLR = GPIO_CPU_INT_ICLR_DIO15_CLR;
+
+    GPIOA->CPU_INT.IMASK = GPIO_CPU_INT_IMASK_DIO15_SET;
+
+    NVIC_SetPriority(GPIOA_INT_IRQn, 2);
+    NVIC_EnableIRQ(GPIOA_INT_IRQn);
 }
 
 //-----------------------------------------------------------------------------
 // DESCRIPTION:
-//    Displays the menu options to the user via UART.
-//    Prompts the user to select an option between 1 and 4.
+//     This function serves as the Interrupt Service Routine (ISR) for the
+//     the interrupt group 1. It handles interrupts from GPIOA and GPIOB,
+//     setting global flags to indicate when push buttons PB1 and PB2 have been
+//     pressed.
 //
 // INPUT PARAMETERS:
-//    none
+//  none
 //
 // OUTPUT PARAMETERS:
-//    none
+//  none
 //
 // RETURN:
-//    none
-//-----------------------------------------------------------------------------
-void printMenu(void) {
-   msp_printf("\r\n======== MENU ========\r\n", 0);
-   msp_printf(" 1. Increment 7-Segment Counter\r\n", 0);
-   msp_printf(" 2. Show Current Temperature\r\n", 0);
-   msp_printf(" 3. Flash LEDs 3 Times\r\n", 0);
-   msp_printf(" 4. End Program\r\n", 0);
-   msp_printf("Enter your selection: ", 0);
-}
+//  none
+// -----------------------------------------------------------------------------
+void GROUP1_IRQHandler(void) // Credit to you (aka Prof. Link)
+{
+    uint32_t group_gpio_iidx;
+    uint32_t gpio_mis;
 
-//-----------------------------------------------------------------------------
-// DESCRIPTION:
-//    Flashes all onboard LEDs three times with a delay between each toggle.
-//    Used for visual feedback to the user.
-//
-// INPUT PARAMETERS:
-//    none
-//
-// OUTPUT PARAMETERS:
-//    none
-//
-// RETURN:
-//    none
-//-----------------------------------------------------------------------------
-void flashLEDS(void) {
-   led_enable();
-
-   for (int i = 0; i < 3; i++) {
-      leds_on(255);
-      msec_delay(500);
-      leds_off();
-      msec_delay(500);
-   }
-
-   led_disable();
+    do 
+    {
+        group_gpio_iidx = CPUSS->INT_GROUP[1].IIDX;
+        switch (group_gpio_iidx)
+        {
+            case (CPUSS_INT_GROUP_IIDX_STAT_INT1): //GPIOB
+                gpio_mis = GPIOB->CPU_INT.MIS;
+                if ((gpio_mis & GPIO_CPU_INT_MIS_DIO18_MASK) == GPIO_CPU_INT_MIS_DIO18_SET)
+                {
+                    g_pb1_pressed = true;
+                    GPIOB->CPU_INT.ICLR = GPIO_CPU_INT_ICLR_DIO18_CLR;
+                }
+                break;
+            case (CPUSS_INT_GROUP_IIDX_STAT_INT0): //GPIOA
+                gpio_mis = GPIOA->CPU_INT.MIS;
+                if ((gpio_mis & GPIO_CPU_INT_MIS_DIO15_MASK) == GPIO_CPU_INT_MIS_DIO15_SET)
+                {
+                    g_pb2_pressed = true;
+                    GPIOA->CPU_INT.ICLR = GPIO_CPU_INT_ICLR_DIO15_CLR;
+                }
+                break;
+        }
+    } while (group_gpio_iidx != 0);
 }
