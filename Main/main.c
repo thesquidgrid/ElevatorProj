@@ -35,10 +35,14 @@
 #include "lcd1602.h"
 #include "uart.h"
 
+#define END_CHARACTER                                                    ('\0')
+#define SIZE_LIMIT                                                         (7)
+
 void msp_printf(char * buffer, unsigned int value);
 void config_pb1_interrupt(void);
 void config_pb2_interrupt(void);
 void GROUP1_IRQHandler(void);
+void access_code();
 
 bool g_pb1_pressed = false;
 bool g_pb2_pressed = false;
@@ -52,6 +56,7 @@ int main(void) {
     UART_init(115200);
     led_init();
     seg7_init();
+    keypad_init();
 
 
 
@@ -231,5 +236,73 @@ void GROUP1_IRQHandler(void) // Credit to you (aka Prof. Link)
     } while (group_gpio_iidx != 0);
 }
 
+void access_code()
+{
 
+    const char correct_code[] = "DA21E7B";
+    char buffer[SIZE_LIMIT + 1];
+    uint8_t idx = 0;
+    bool done = false;
+    uint8_t wrong_attempts = 0;
+
+    lcd_write_string("Enter Code: ");
+
+    while (!done) 
+    {
+        uint8_t key = getkey_pressed();
+
+        if (key <= 15)
+        {
+            if (idx < SIZE_LIMIT)
+            {
+                char mapped_char;
+                if (key < 10) mapped_char = '0' + key;
+                else mapped_char = 'A' + (key - 10);
+
+                buffer[idx++] = mapped_char;
+                lcd_write_char(mapped_char);
+            }
+        }
+
+            if (idx == SIZE_LIMIT)
+            {
+                bool correct = true;
+                for (int i = 0; i < SIZE_LIMIT; i++) 
+                {
+                    if (buffer[i] != correct_code[i])
+                    {
+                        correct = false;
+                        break;
+                    }
+                }
+            }
+
+            if (correct)
+            {
+                lcd_clear();
+                lcd_write_string("-- WELCOME --")
+                done = true;
+            } else {
+                wrong_attempts++;
+                lcd_clear();
+
+                if (wrong_attempts > 3)
+                {
+                    lcd_write_string("SECURITY ALERT");
+                    done = true;
+                } else {
+                    lcd_write_string("-- TRY AGAIN --");
+                    msec_delay(1000) // change into define
+                    lcd_clear();
+                    lcd_write_string("Enter Code: ");
+                    idx = 0;
+                }
+            }
+        }
+
+        wait_no_key_pressed();
+        msec_delay(10);
+    }
+
+}
 
