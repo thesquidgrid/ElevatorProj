@@ -36,12 +36,16 @@
 #include "uart.h"
 
 #define END_CHARACTER                                                    ('\0')
-#define SIZE_LIMIT                                                         (7)
+#define SIZE_LIMIT                                                          (7)
+#define MAX_ATTEMPTS                                                        (3)
+#define RETRY_DELAY_MS                                                   (1500)
 
 void msp_printf(char * buffer, unsigned int value);
+
 void config_pb1_interrupt(void);
 void config_pb2_interrupt(void);
 void GROUP1_IRQHandler(void);
+
 void access_code();
 
 bool g_pb1_pressed = false;
@@ -238,14 +242,14 @@ void GROUP1_IRQHandler(void) // Credit to you (aka Prof. Link)
 
 void access_code()
 {
-
-    const char correct_code[] = "DA21E7B";
-    char buffer[SIZE_LIMIT + 1];
+    const char correct_code[] = "2222222"; // test code
+    char buffer[SIZE_LIMIT + 1];  // +1 for null terminator
     uint8_t idx = 0;
     bool done = false;
     uint8_t wrong_attempts = 0;
 
     lcd_write_string("Enter Code: ");
+    lcd_set_ddram_addr(LCD_LINE2_ADDR);
 
     while (!done) 
     {
@@ -264,38 +268,44 @@ void access_code()
             }
         }
 
-            if (idx == SIZE_LIMIT)
+        if (idx == SIZE_LIMIT)
+        {
+            bool correct = true;
+
+            for (int i = 0; i < SIZE_LIMIT; i++) 
             {
-                bool correct = true;
-                for (int i = 0; i < SIZE_LIMIT; i++) 
+                if (buffer[i] != correct_code[i])
                 {
-                    if (buffer[i] != correct_code[i])
-                    {
-                        correct = false;
-                        break;
-                    }
+                    correct = false;
+                    break;
                 }
             }
 
             if (correct)
             {
                 lcd_clear();
-                lcd_write_string("-- WELCOME --")
+                lcd_write_string("-- WELCOME --");
                 done = true;
-            } else {
+            } 
+            else 
+            {
                 wrong_attempts++;
                 lcd_clear();
 
-                if (wrong_attempts > 3)
+                if (wrong_attempts >= MAX_ATTEMPTS)
                 {
                     lcd_write_string("SECURITY ALERT");
                     done = true;
-                } else {
+                } 
+                else 
+                {
                     lcd_write_string("-- TRY AGAIN --");
-                    msec_delay(1000) // change into define
+                    msec_delay(RETRY_DELAY_MS);
                     lcd_clear();
                     lcd_write_string("Enter Code: ");
+                    lcd_set_ddram_addr(LCD_LINE2_ADDR);
                     idx = 0;
+                    memset(buffer, 0, sizeof(buffer));
                 }
             }
         }
@@ -303,6 +313,5 @@ void access_code()
         wait_no_key_pressed();
         msec_delay(10);
     }
-
 }
 
