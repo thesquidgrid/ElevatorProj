@@ -25,6 +25,7 @@
 #include "ti/devices/msp/peripherals/m0p/hw_cpuss.h"
 #include <stdio.h>
 #include <stdbool.h>
+#include <stdlib.h>
 
 #include <ti/devices/msp/msp.h>
 
@@ -41,8 +42,12 @@
 #define RETRY_DELAY_MS                                                   (1500)
 #define DEBOUNCE 15
 
-void msp_printf(char * buffer, unsigned int value);
+int VALIDCODES[] = {0000, 1423, 7512, 2310, 1234, 2534, 9902};
+char EMPLOYEE_NAMES[][16] = {"Sophia Buchman", "Rusquel Ramirez", "Bruce Link", "Tobin Peterson", "Lewis Doyle", "Amy Winehouse", "ADMIN"};
+bool g_pb1_pressed = false;
+bool g_pb2_pressed = false;
 
+void msp_printf(char * buffer, unsigned int value);
 void config_pb1_interrupt(void);
 void config_pb2_interrupt(void);
 void GROUP1_IRQHandler(void);
@@ -50,9 +55,8 @@ int8_t padPress(void);
 void access_code();
 uint16_t keypad_input();
 int string_to_uint16(char string[]);
-
-bool g_pb1_pressed = false;
-bool g_pb2_pressed = false;
+int* checkIfValid(int16_t code);
+bool admin();
 
 int main(void) {
     clock_init_40mhz();
@@ -64,9 +68,53 @@ int main(void) {
     led_init();
     seg7_init();
     keypad_init();
-    uint16_t employee_code;
-    employee_code = keypad_input();
 
+    bool finishProgramFlag = false;
+    while(finishProgramFlag == false){
+    uint8_t attempt_count = 0;
+    bool validCode = false; 
+    
+    uint16_t employee_code;
+    int* validCode_and_position = (int*)malloc(2 * sizeof(int));
+
+    lcd_clear();
+    while((attempt_count < MAX_ATTEMPTS) && (validCode == false)){
+    lcd_set_ddram_addr(LCD_LINE1_ADDR);
+    lcd_write_string("Employee Number:");
+        employee_code = keypad_input();
+        validCode_and_position = checkIfValid(employee_code);
+        validCode = validCode_and_position[0];
+
+        if(validCode == false){
+            attempt_count++;
+            lcd_clear();
+            lcd_write_string("WRONG INPUT");
+            lcd_set_ddram_addr(LCD_LINE2_ADDR);
+            lcd_write_string("TRY AGAIN");
+            msec_delay(1000);
+            lcd_clear();
+        }
+    }
+    msp_printf("meow", 0);
+    if(attempt_count == MAX_ATTEMPTS){
+        //put code that puts you backt to the beginning
+        bool adminAccess = false;
+        while(adminAccess == false){
+            adminAccess = admin();
+        }
+
+    } else{
+        lcd_clear();
+        lcd_set_ddram_addr(LCD_LINE1_ADDR);
+        lcd_write_string("Welcome:");
+        lcd_set_ddram_addr(LCD_LINE2_ADDR);
+        lcd_write_string(EMPLOYEE_NAMES[validCode_and_position[1]]);
+    }
+    
+    }
+    
+
+  
 
     
     //access code 
@@ -244,82 +292,6 @@ void GROUP1_IRQHandler(void) // Credit to you (aka Prof. Link)
     } while (group_gpio_iidx != 0);
 }
 
-void access_code()
-{
-    const char correct_code[] = "2222222"; // test code
-    char buffer[SIZE_LIMIT + 1];  // +1 for null terminator
-    uint8_t idx = 0;
-    bool done = false;
-    uint8_t wrong_attempts = 0;
-
-    lcd_write_string("Enter Code: ");
-    lcd_set_ddram_addr(LCD_LINE2_ADDR);
-
-    while (!done) 
-    {
-        uint8_t key = getkey_pressed();
-
-        if (key <= 15)
-        {
-            if (idx < SIZE_LIMIT)
-            {
-                char mapped_char;
-                if (key < 10) mapped_char = '0' + key;
-                else mapped_char = 'A' + (key - 10);
-
-                buffer[idx++] = mapped_char;
-                lcd_write_char(mapped_char);
-            }
-        }
-
-        if (idx == SIZE_LIMIT)
-        {
-            bool correct = true;
-
-            for (int i = 0; i < SIZE_LIMIT; i++) 
-            {
-                if (buffer[i] != correct_code[i])
-                {
-                    correct = false;
-                    break;
-                }
-            }
-
-            if (correct)
-            {
-                lcd_clear();
-                lcd_write_string("-- WELCOME --");
-                done = true;
-            } 
-            else 
-            {
-                wrong_attempts++;
-                lcd_clear();
-
-                if (wrong_attempts >= MAX_ATTEMPTS)
-                {
-                    lcd_write_string("SECURITY ALERT");
-                    done = true;
-                } 
-                else 
-                {
-                    lcd_write_string("-- TRY AGAIN --");
-                    msec_delay(RETRY_DELAY_MS);
-                    lcd_clear();
-                    lcd_write_string("Enter Code: ");
-                    lcd_set_ddram_addr(LCD_LINE2_ADDR);
-                    idx = 0;
-                    memset(buffer, 0, sizeof(buffer));
-                }
-            }
-        }
-
-        wait_no_key_pressed();
-        msec_delay(10);
-    }
-}
-
-
 
 
 // -----------------------------------------------------------------------------
@@ -350,8 +322,9 @@ int8_t padPress() {
 
  
 uint16_t keypad_input() {
-   lcd_clear();
-   lcd_set_ddram_addr(LCD_LINE1_ADDR + LCD_CHAR_POSITION_7);
+   
+
+   lcd_set_ddram_addr(LCD_LINE2_ADDR + LCD_CHAR_POSITION_7);
 
    bool flag = false;
    int8_t count = 0;
@@ -406,4 +379,36 @@ int string_to_uint16(char string[]) {
         string++;
     }
     return result;
+}
+
+
+//return position code was found as well as if it was found in the first place
+int* checkIfValid(int16_t code){
+    bool code_is_valid = false;
+    int i = 0;
+    while(((i< sizeof(VALIDCODES)) && (code_is_valid == false))){
+        if(VALIDCODES[i] == code){
+            code_is_valid = true;
+        }
+        i++;
+    }
+
+    int* validCode_and_position = (int*)malloc(2 * sizeof(int)); 
+    
+    validCode_and_position[0] = code_is_valid;
+    validCode_and_position[1] = i - 1;
+    return validCode_and_position;
+}
+
+bool admin(){
+    lcd_clear();
+    lcd_set_ddram_addr(LCD_LINE1_ADDR);
+    lcd_write_string("WAIT FOR ADMIN:");
+    int password = keypad_input();
+    bool admin_access = false;
+    int admin_value_index = (sizeof(VALIDCODES) / sizeof(VALIDCODES[0])) - 1;
+    if(password == VALIDCODES[admin_value_index]){
+        admin_access = true;
+    }
+    return admin_access;
 }
