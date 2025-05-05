@@ -1,0 +1,393 @@
+//*****************************************************************************
+//*****************************    C Source Code    ***************************
+//*****************************************************************************
+//  DESIGNER NAME:  Sophia Buchman & Rusquel Ramirez
+//
+//       LAB NAME:  Final Project
+//
+//      FILE NAME:  final_main.c
+//
+//-----------------------------------------------------------------------------
+//
+// DESCRIPTION:
+//    This program runs a menu-driven interface on the MSPM0G3507 microcontroller. 
+//    It allows the user to interact via UART to control a 7-segment display, read temperature data, and flash LEDs. 
+//    The program loops until the user chooses to exit.
+//*****************************************************************************
+//*****************************************************************************
+
+//-----------------------------------------------------------------------------
+// Loads standard C include files
+//-----------------------------------------------------------------------------
+
+#include "ti/devices/msp/m0p/mspm0g350x.h"
+#include "ti/devices/msp/peripherals/hw_gpio.h"
+#include "ti/devices/msp/peripherals/m0p/hw_cpuss.h"
+#include <stdio.h>
+#include <stdbool.h>
+
+#include <ti/devices/msp/msp.h>
+
+#include "clock.h"
+#include "LaunchPad.h"
+
+#include "adc.h"
+#include "lcd1602.h"
+#include "uart.h"
+
+#define END_CHARACTER                                                    ('\0')
+#define SIZE_LIMIT                                                          (7)
+#define MAX_ATTEMPTS                                                        (3)
+#define RETRY_DELAY_MS                                                   (1500)
+#define DEBOUNCE 15
+
+void msp_printf(char * buffer, unsigned int value);
+
+void config_pb1_interrupt(void);
+void config_pb2_interrupt(void);
+void GROUP1_IRQHandler(void);
+int8_t padPress(void);
+void access_code();
+void keypad_input();
+
+bool g_pb1_pressed = false;
+bool g_pb2_pressed = false;
+
+int main(void) {
+    clock_init_40mhz();
+    launchpad_gpio_init();
+    dipsw_init();
+    I2C_init();
+    lcd1602_init();
+    UART_init(115200);
+    led_init();
+    seg7_init();
+    keypad_init();
+
+   keypad_input();
+
+    
+    //access code 
+
+    /*
+    set a predetermined "correct" code and "incorrect" code
+    keypad presses -> lcd display (set char limit) 
+                    (either display one at a time as you type or all at once after limit)
+    if INCORRECT
+        lcd TRY AGAIN
+        wrong counter++
+        if wrong counter = 3
+            error buzzer
+            "WRONG CODE
+            SECURITY!!!"
+            program ends
+    if CORRECT
+        "WELCOME"
+    */
+
+    //floor picker
+
+    /*
+    lcd_string_write ("DIRECTION?");
+    lcd_set_address(LINE2)
+    lcd_string write("PB1") + UP Arrow(?) + ("PB2") + DOWN Arrow(?)
+
+    if (g_pb1_pressed)
+    {
+        set_floors to 6 -> 10
+        [ function to select the floor]
+            potentiometer to pick floor
+            (optional) doors close
+            Red LED on, Green LED off
+            once floor picked, leds count up to that floor
+                (optional) if CLOSE button held, doors count to floor and stay closed
+                           if OPEN button held, doors do not close and LEDS don't move
+            GREEN Led on
+            (optional) doors open
+            ding sound
+            program asks if thhis is the correct floor
+                if yes, end program and (optional) close door
+                if no, repeat the whole process
+    }
+
+    if (g_pb2_pressed) set floors to B -> 4 + repeat process above
+    */
+
+
+
+    while (1);
+}
+
+//-----------------------------------------------------------------------------
+// DESCRIPTION:
+//    Prints a formatted string via UART using sprintf and UART_out_char.
+//
+// INPUT PARAMETERS:
+//    char* buffer - Format string containing the message to print.
+//    unsigned int value - Value to format into the string.
+//
+// OUTPUT PARAMETERS:
+//    none
+//
+// RETURN:
+//    none
+//-----------------------------------------------------------------------------
+void msp_printf(char * buffer, unsigned int value) {
+   char string[80];
+   int len = sprintf(string, buffer, value);
+
+   for (int i = 0; i < len; i++) {
+      UART_out_char(string[i]);
+   }
+}
+
+
+//-----------------------------------------------------------------------------
+// DESCRIPTION:
+//     This function configures an interrupt button for push button PB1. It sets
+//     the interrupy to trigger on the rising edge, ensure the interrupt bit is 
+//     cleared, unmasks the interruptto allow it, and sets the priority and 
+//     enables the interrupt in the NVIC.
+//
+// INPUT PARAMETERS:
+//  none
+//
+// OUTPUT PARAMETERS:
+//  none
+//
+// RETURN:
+//  none
+// -----------------------------------------------------------------------------
+void config_pb1_interrupt(void)  // Credit to you (aka Prof. Link)
+{
+    GPIOB->POLARITY31_16 = GPIO_POLARITY31_16_DIO18_RISE;
+    GPIOB->CPU_INT.ICLR = GPIO_CPU_INT_ICLR_DIO18_CLR;
+
+    GPIOB->CPU_INT.IMASK = GPIO_CPU_INT_IMASK_DIO18_SET;
+
+    NVIC_SetPriority(GPIOB_INT_IRQn, 2);
+    NVIC_EnableIRQ(GPIOB_INT_IRQn);
+}
+
+//-----------------------------------------------------------------------------
+// DESCRIPTION:
+//     This function configures an interrupt button for push button PB2. It sets
+//     the interrupy to trigger on the rising edge, ensure the interrupt bit is 
+//     cleared, unmasks the interruptto allow it, and sets the priority and 
+//     enables the interrupt in the NVIC.
+//
+// INPUT PARAMETERS:
+//  none
+//
+// OUTPUT PARAMETERS:
+//  none
+//
+// RETURN:
+//  none
+// -----------------------------------------------------------------------------
+void config_pb2_interrupt(void)  // Credit to you (aka Prof. Link)
+{
+    GPIOA->POLARITY15_0 = GPIO_POLARITY15_0_DIO15_RISE;
+    GPIOA->CPU_INT.ICLR = GPIO_CPU_INT_ICLR_DIO15_CLR;
+
+    GPIOA->CPU_INT.IMASK = GPIO_CPU_INT_IMASK_DIO15_SET;
+
+    NVIC_SetPriority(GPIOA_INT_IRQn, 2);
+    NVIC_EnableIRQ(GPIOA_INT_IRQn);
+}
+
+//-----------------------------------------------------------------------------
+// DESCRIPTION:
+//     This function serves as the Interrupt Service Routine (ISR) for the
+//     the interrupt group 1. It handles interrupts from GPIOA and GPIOB,
+//     setting global flags to indicate when push buttons PB1 and PB2 have been
+//     pressed.
+//
+// INPUT PARAMETERS:
+//  none
+//
+// OUTPUT PARAMETERS:
+//  none
+//
+// RETURN:
+//  none
+// -----------------------------------------------------------------------------
+void GROUP1_IRQHandler(void) // Credit to you (aka Prof. Link)
+{
+    uint32_t group_gpio_iidx;
+    uint32_t gpio_mis;
+
+    do 
+    {
+        group_gpio_iidx = CPUSS->INT_GROUP[1].IIDX;
+        switch (group_gpio_iidx)
+        {
+            case (CPUSS_INT_GROUP_IIDX_STAT_INT1): //GPIOB
+                gpio_mis = GPIOB->CPU_INT.MIS;
+                if ((gpio_mis & GPIO_CPU_INT_MIS_DIO18_MASK) == GPIO_CPU_INT_MIS_DIO18_SET)
+                {
+                    g_pb1_pressed = true;
+                    GPIOB->CPU_INT.ICLR = GPIO_CPU_INT_ICLR_DIO18_CLR;
+                }
+                break;
+            case (CPUSS_INT_GROUP_IIDX_STAT_INT0): //GPIOA
+                gpio_mis = GPIOA->CPU_INT.MIS;
+                if ((gpio_mis & GPIO_CPU_INT_MIS_DIO15_MASK) == GPIO_CPU_INT_MIS_DIO15_SET)
+                {
+                    g_pb2_pressed = true;
+                    GPIOA->CPU_INT.ICLR = GPIO_CPU_INT_ICLR_DIO15_CLR;
+                }
+                break;
+        }
+    } while (group_gpio_iidx != 0);
+}
+
+void access_code()
+{
+    const char correct_code[] = "2222222"; // test code
+    char buffer[SIZE_LIMIT + 1];  // +1 for null terminator
+    uint8_t idx = 0;
+    bool done = false;
+    uint8_t wrong_attempts = 0;
+
+    lcd_write_string("Enter Code: ");
+    lcd_set_ddram_addr(LCD_LINE2_ADDR);
+
+    while (!done) 
+    {
+        uint8_t key = getkey_pressed();
+
+        if (key <= 15)
+        {
+            if (idx < SIZE_LIMIT)
+            {
+                char mapped_char;
+                if (key < 10) mapped_char = '0' + key;
+                else mapped_char = 'A' + (key - 10);
+
+                buffer[idx++] = mapped_char;
+                lcd_write_char(mapped_char);
+            }
+        }
+
+        if (idx == SIZE_LIMIT)
+        {
+            bool correct = true;
+
+            for (int i = 0; i < SIZE_LIMIT; i++) 
+            {
+                if (buffer[i] != correct_code[i])
+                {
+                    correct = false;
+                    break;
+                }
+            }
+
+            if (correct)
+            {
+                lcd_clear();
+                lcd_write_string("-- WELCOME --");
+                done = true;
+            } 
+            else 
+            {
+                wrong_attempts++;
+                lcd_clear();
+
+                if (wrong_attempts >= MAX_ATTEMPTS)
+                {
+                    lcd_write_string("SECURITY ALERT");
+                    done = true;
+                } 
+                else 
+                {
+                    lcd_write_string("-- TRY AGAIN --");
+                    msec_delay(RETRY_DELAY_MS);
+                    lcd_clear();
+                    lcd_write_string("Enter Code: ");
+                    lcd_set_ddram_addr(LCD_LINE2_ADDR);
+                    idx = 0;
+                    memset(buffer, 0, sizeof(buffer));
+                }
+            }
+        }
+
+        wait_no_key_pressed();
+        msec_delay(10);
+    }
+}
+
+
+
+
+// -----------------------------------------------------------------------------
+// DESCRIPTION
+//    This function scans for a keypad press, converts the key value to its 
+//    corresponding hexadecimal representation, and displays it on the LCD. 
+//    It ensures no key is pressed before returning the scanned ASCII value.
+//
+// INPUT PARAMETERS:
+//    none
+//
+// OUTPUT PARAMETERS:
+//    none
+//
+// RETURN:
+//    ascii - The ASCII value of the key pressed on the keypad.
+// -----------------------------------------------------------------------------
+
+int8_t padPress() {
+   int8_t ascii = keypad_scan();
+   if (ascii != 0x10) {
+      hex_to_lcd(ascii);
+      msec_delay(200);
+   }
+   wait_no_key_pressed();
+   return ascii;
+}
+
+
+void keypad_input() {
+   lcd_clear();
+   lcd_set_ddram_addr(LCD_LINE1_ADDR);
+
+   bool flag = false;
+   bool rowFlag = false;
+   int8_t count = 0;
+   int8_t ascii = 0;
+   while (flag == false) {
+
+
+      if (rowFlag == false) {
+         lcd_set_ddram_addr(LCD_LINE1_ADDR + count);
+         if (count == 16) {
+            count = 0;
+            rowFlag = true;
+         }
+      } else {
+         lcd_set_ddram_addr(LCD_LINE2_ADDR + count);
+         if (count == 16) {
+            count = 0;
+            rowFlag = false;
+         }
+      }
+
+      if ((count == 0 && rowFlag == 0)) {
+         ascii = keypad_scan();
+         if (ascii != 0x10) {
+            lcd_clear();
+            lcd_set_ddram_addr(0x00);
+            padPress();
+            count++;
+         }
+
+      } else {
+         ascii = padPress();
+         if (ascii != 0x10) {
+            count++;
+         }
+
+      }
+
+   }
+}
