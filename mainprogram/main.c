@@ -48,7 +48,8 @@ void config_pb2_interrupt(void);
 void GROUP1_IRQHandler(void);
 int8_t padPress(void);
 void access_code();
-void keypad_input();
+uint16_t keypad_input();
+int string_to_uint16(char string[]);
 
 bool g_pb1_pressed = false;
 bool g_pb2_pressed = false;
@@ -63,8 +64,9 @@ int main(void) {
     led_init();
     seg7_init();
     keypad_init();
+    uint16_t employee_code;
+    employee_code = keypad_input();
 
-   keypad_input();
 
     
     //access code 
@@ -346,48 +348,62 @@ int8_t padPress() {
    return ascii;
 }
 
-
-void keypad_input() {
+ 
+uint16_t keypad_input() {
    lcd_clear();
-   lcd_set_ddram_addr(LCD_LINE1_ADDR);
+   lcd_set_ddram_addr(LCD_LINE1_ADDR + LCD_CHAR_POSITION_7);
 
    bool flag = false;
-   bool rowFlag = false;
    int8_t count = 0;
    int8_t ascii = 0;
+   char buffer[5] = {0};
+   char input_char;
+
    while (flag == false) {
 
 
-      if (rowFlag == false) {
-         lcd_set_ddram_addr(LCD_LINE1_ADDR + count);
-         if (count == 16) {
-            count = 0;
-            rowFlag = true;
+         if(count < 4){
+            ascii = padPress();
+            msec_delay(DEBOUNCE);
+            if (ascii != 0x10) {
+                buffer[count] = ascii + '0'; //convert integer to character and then put it in array.
+                count++;
+            }
+         } else{
+            flag = true;
          }
-      } else {
-         lcd_set_ddram_addr(LCD_LINE2_ADDR + count);
-         if (count == 16) {
-            count = 0;
-            rowFlag = false;
-         }
-      }
+}
 
-      if ((count == 0 && rowFlag == 0)) {
-         ascii = keypad_scan();
-         if (ascii != 0x10) {
-            lcd_clear();
-            lcd_set_ddram_addr(0x00);
-            padPress();
-            count++;
-         }
+buffer[count] = '\0';
+int16_t employeeNum = string_to_uint16(buffer);
+return employeeNum;
+}
 
-      } else {
-         ascii = padPress();
-         if (ascii != 0x10) {
-            count++;
-         }
 
-      }
 
-   }
+//-----------------------------------------------------------------------------
+// DESCRIPTION:
+//    Converts a numeric string into an unsigned 16-bit integer.
+//
+// INPUT PARAMETERS:
+//    char string[] - Input string of digits.
+//
+// OUTPUT PARAMETERS:
+//    none
+//
+// RETURN:
+//    int - Parsed integer.
+//-----------------------------------------------------------------------------
+int string_to_uint16(char string[]) {
+    int result = 0;
+
+    while (*string != NULL) {
+        if (*string >= '0' && *string <= '9') {
+            result = result * 10 + (*string - '0');
+        } else {
+            return 0;  // Invalid character
+        }
+        string++;
+    }
+    return result;
 }
