@@ -21,29 +21,55 @@
 //-----------------------------------------------------------------------------
 
 #include "ti/devices/msp/m0p/mspm0g350x.h"
+
 #include "ti/devices/msp/peripherals/hw_gpio.h"
+
 #include "ti/devices/msp/peripherals/m0p/hw_cpuss.h"
+
 #include <stdio.h>
+
 #include <stdbool.h>
+
 #include <stdlib.h>
 
 #include <ti/devices/msp/msp.h>
 
 #include "clock.h"
+
 #include "LaunchPad.h"
 
 #include "adc.h"
+
 #include "lcd1602.h"
+
 #include "uart.h"
 
-#define END_CHARACTER                                                    ('\0')
-#define SIZE_LIMIT                                                          (7)
-#define MAX_ATTEMPTS                                                        (3)
-#define RETRY_DELAY_MS                                                   (1500)
+#define END_CHARACTER ('\0')
+#define SIZE_LIMIT (7)
+#define MAX_ATTEMPTS (3)
+#define RETRY_DELAY_MS (1500)
 #define DEBOUNCE 15
 
-int VALIDCODES[] = {0000, 1423, 7512, 2310, 1234, 2534, 9902};
-char EMPLOYEE_NAMES[][16] = {"Sophia Buchman", "Rusquel Ramirez", "Bruce Link", "Tobin Peterson", "Lewis Doyle", "Amy Winehouse", "ADMIN"};
+int VALIDCODES[] = {
+   0000,
+   1423,
+   7512,
+   2310,
+   1234,
+   2534,
+   9902
+};
+char EMPLOYEE_NAMES[][16] = {
+   "Sophia Buchman",
+   "Rusquel Ramirez",
+   "Bruce Link",
+   "Tobin Peterson",
+   "Lewis Doyle",
+   "Amy Winehouse",
+   "ADMIN"
+};
+
+
 bool g_pb1_pressed = false;
 bool g_pb2_pressed = false;
 
@@ -55,37 +81,39 @@ int8_t padPress(void);
 void access_code();
 uint16_t keypad_input();
 int string_to_uint16(char string[]);
-int* checkIfValid(int16_t code);
+int * checkIfValid(int16_t code);
 bool admin();
 
 int main(void) {
-    clock_init_40mhz();
-    launchpad_gpio_init();
-    dipsw_init();
-    I2C_init();
-    lcd1602_init();
-    UART_init(115200);
-    led_init();
-    seg7_init();
-    keypad_init();
+   clock_init_40mhz();
+   launchpad_gpio_init();
+   dipsw_init();
+   I2C_init();
+   lcd1602_init();
+   UART_init(115200);
+   led_init();
+   seg7_init();
+   keypad_init();
 
-    bool finishProgramFlag = false;
-    while(finishProgramFlag == false){
-    uint8_t attempt_count = 0;
-    bool validCode = false; 
-    
-    uint16_t employee_code;
-    int* validCode_and_position = (int*)malloc(2 * sizeof(int));
+   bool finishProgramFlag = false;
+   int currentLevel = 7; 
 
-    lcd_clear();
-    while((attempt_count < MAX_ATTEMPTS) && (validCode == false)){
-    lcd_set_ddram_addr(LCD_LINE1_ADDR);
-    lcd_write_string("Employee Number:");
-        employee_code = keypad_input();
-        validCode_and_position = checkIfValid(employee_code);
-        validCode = validCode_and_position[0];
+   while (finishProgramFlag == false) {
+      uint8_t attempt_count = 0;
+      bool validCode = false;
 
-        if(validCode == false){
+      uint16_t employee_code;
+      int * validCode_and_position = (int * ) malloc(2 * sizeof(int));
+
+      lcd_clear();
+      while ((attempt_count < MAX_ATTEMPTS) && (validCode == false)) {
+         lcd_set_ddram_addr(LCD_LINE1_ADDR);
+         lcd_write_string("Employee Number:");
+         employee_code = keypad_input();
+         validCode_and_position = checkIfValid(employee_code);
+         validCode = validCode_and_position[0];
+
+         if (validCode == false) {
             attempt_count++;
             lcd_clear();
             lcd_write_string("WRONG INPUT");
@@ -93,79 +121,80 @@ int main(void) {
             lcd_write_string("TRY AGAIN");
             msec_delay(1000);
             lcd_clear();
-        }
-    }
-    msp_printf("meow", 0);
-    if(attempt_count == MAX_ATTEMPTS){
-        //put code that puts you backt to the beginning
-        bool adminAccess = false;
-        while(adminAccess == false){
+         }
+      }
+      if (attempt_count == MAX_ATTEMPTS) {
+         //put code that puts you backt to the beginning
+         bool adminAccess = false;
+         while (adminAccess == false) {
             adminAccess = admin();
-        }
+         }
 
-    } else{
-        lcd_clear();
-        lcd_set_ddram_addr(LCD_LINE1_ADDR);
-        lcd_write_string("Welcome:");
-        lcd_set_ddram_addr(LCD_LINE2_ADDR);
-        lcd_write_string(EMPLOYEE_NAMES[validCode_and_position[1]]);
-    }
-    
-    }
-    
+      } else { //continue with program
+         lcd_clear();
+         lcd_set_ddram_addr(LCD_LINE1_ADDR);
+         lcd_write_string("Welcome:");
+         lcd_set_ddram_addr(LCD_LINE2_ADDR);
+         lcd_write_string(EMPLOYEE_NAMES[validCode_and_position[1]]);
+         msec_delay(1000);
+         lcd_clear();
+         lcd_write_string("Up or Down?");
+         uint8_t up_or_down = dipsw_read_pos1();
+         if(up_or_down == 1){
+            
+         }
 
-  
+      }
 
-    
-    //access code 
+   }
 
-    /*
-    set a predetermined "correct" code and "incorrect" code
-    keypad presses -> lcd display (set char limit) 
-                    (either display one at a time as you type or all at once after limit)
-    if INCORRECT
-        lcd TRY AGAIN
-        wrong counter++
-        if wrong counter = 3
-            error buzzer
-            "WRONG CODE
-            SECURITY!!!"
-            program ends
-    if CORRECT
-        "WELCOME"
-    */
+   //access code 
 
-    //floor picker
+   /*
+   set a predetermined "correct" code and "incorrect" code
+   keypad presses -> lcd display (set char limit) 
+                   (either display one at a time as you type or all at once after limit)
+   if INCORRECT
+       lcd TRY AGAIN
+       wrong counter++
+       if wrong counter = 3
+           error buzzer
+           "WRONG CODE
+           SECURITY!!!"
+           program ends
+   if CORRECT
+       "WELCOME"
+   */
 
-    /*
-    lcd_string_write ("DIRECTION?");
-    lcd_set_address(LINE2)
-    lcd_string write("PB1") + UP Arrow(?) + ("PB2") + DOWN Arrow(?)
+   //floor picker
 
-    if (g_pb1_pressed)
-    {
-        set_floors to 6 -> 10
-        [ function to select the floor]
-            potentiometer to pick floor
-            (optional) doors close
-            Red LED on, Green LED off
-            once floor picked, leds count up to that floor
-                (optional) if CLOSE button held, doors count to floor and stay closed
-                           if OPEN button held, doors do not close and LEDS don't move
-            GREEN Led on
-            (optional) doors open
-            ding sound
-            program asks if thhis is the correct floor
-                if yes, end program and (optional) close door
-                if no, repeat the whole process
-    }
+   /*
+   lcd_string_write ("DIRECTION?");
+   lcd_set_address(LINE2)
+   lcd_string write("PB1") + UP Arrow(?) + ("PB2") + DOWN Arrow(?)
 
-    if (g_pb2_pressed) set floors to B -> 4 + repeat process above
-    */
+   if (g_pb1_pressed)
+   {
+       set_floors to 6 -> 10
+       [ function to select the floor]
+           potentiometer to pick floor
+           (optional) doors close
+           Red LED on, Green LED off
+           once floor picked, leds count up to that floor
+               (optional) if CLOSE button held, doors count to floor and stay closed
+                          if OPEN button held, doors do not close and LEDS don't move
+           GREEN Led on
+           (optional) doors open
+           ding sound
+           program asks if thhis is the correct floor
+               if yes, end program and (optional) close door
+               if no, repeat the whole process
+   }
 
+   if (g_pb2_pressed) set floors to B -> 4 + repeat process above
+   */
 
-
-    while (1);
+   while (1);
 }
 
 //-----------------------------------------------------------------------------
@@ -191,7 +220,6 @@ void msp_printf(char * buffer, unsigned int value) {
    }
 }
 
-
 //-----------------------------------------------------------------------------
 // DESCRIPTION:
 //     This function configures an interrupt button for push button PB1. It sets
@@ -208,15 +236,15 @@ void msp_printf(char * buffer, unsigned int value) {
 // RETURN:
 //  none
 // -----------------------------------------------------------------------------
-void config_pb1_interrupt(void)  // Credit to you (aka Prof. Link)
+void config_pb1_interrupt(void) // Credit to you (aka Prof. Link)
 {
-    GPIOB->POLARITY31_16 = GPIO_POLARITY31_16_DIO18_RISE;
-    GPIOB->CPU_INT.ICLR = GPIO_CPU_INT_ICLR_DIO18_CLR;
+   GPIOB -> POLARITY31_16 = GPIO_POLARITY31_16_DIO18_RISE;
+   GPIOB -> CPU_INT.ICLR = GPIO_CPU_INT_ICLR_DIO18_CLR;
 
-    GPIOB->CPU_INT.IMASK = GPIO_CPU_INT_IMASK_DIO18_SET;
+   GPIOB -> CPU_INT.IMASK = GPIO_CPU_INT_IMASK_DIO18_SET;
 
-    NVIC_SetPriority(GPIOB_INT_IRQn, 2);
-    NVIC_EnableIRQ(GPIOB_INT_IRQn);
+   NVIC_SetPriority(GPIOB_INT_IRQn, 2);
+   NVIC_EnableIRQ(GPIOB_INT_IRQn);
 }
 
 //-----------------------------------------------------------------------------
@@ -235,15 +263,15 @@ void config_pb1_interrupt(void)  // Credit to you (aka Prof. Link)
 // RETURN:
 //  none
 // -----------------------------------------------------------------------------
-void config_pb2_interrupt(void)  // Credit to you (aka Prof. Link)
+void config_pb2_interrupt(void) // Credit to you (aka Prof. Link)
 {
-    GPIOA->POLARITY15_0 = GPIO_POLARITY15_0_DIO15_RISE;
-    GPIOA->CPU_INT.ICLR = GPIO_CPU_INT_ICLR_DIO15_CLR;
+   GPIOA -> POLARITY15_0 = GPIO_POLARITY15_0_DIO15_RISE;
+   GPIOA -> CPU_INT.ICLR = GPIO_CPU_INT_ICLR_DIO15_CLR;
 
-    GPIOA->CPU_INT.IMASK = GPIO_CPU_INT_IMASK_DIO15_SET;
+   GPIOA -> CPU_INT.IMASK = GPIO_CPU_INT_IMASK_DIO15_SET;
 
-    NVIC_SetPriority(GPIOA_INT_IRQn, 2);
-    NVIC_EnableIRQ(GPIOA_INT_IRQn);
+   NVIC_SetPriority(GPIOA_INT_IRQn, 2);
+   NVIC_EnableIRQ(GPIOA_INT_IRQn);
 }
 
 //-----------------------------------------------------------------------------
@@ -264,35 +292,29 @@ void config_pb2_interrupt(void)  // Credit to you (aka Prof. Link)
 // -----------------------------------------------------------------------------
 void GROUP1_IRQHandler(void) // Credit to you (aka Prof. Link)
 {
-    uint32_t group_gpio_iidx;
-    uint32_t gpio_mis;
+   uint32_t group_gpio_iidx;
+   uint32_t gpio_mis;
 
-    do 
-    {
-        group_gpio_iidx = CPUSS->INT_GROUP[1].IIDX;
-        switch (group_gpio_iidx)
-        {
-            case (CPUSS_INT_GROUP_IIDX_STAT_INT1): //GPIOB
-                gpio_mis = GPIOB->CPU_INT.MIS;
-                if ((gpio_mis & GPIO_CPU_INT_MIS_DIO18_MASK) == GPIO_CPU_INT_MIS_DIO18_SET)
-                {
-                    g_pb1_pressed = true;
-                    GPIOB->CPU_INT.ICLR = GPIO_CPU_INT_ICLR_DIO18_CLR;
-                }
-                break;
-            case (CPUSS_INT_GROUP_IIDX_STAT_INT0): //GPIOA
-                gpio_mis = GPIOA->CPU_INT.MIS;
-                if ((gpio_mis & GPIO_CPU_INT_MIS_DIO15_MASK) == GPIO_CPU_INT_MIS_DIO15_SET)
-                {
-                    g_pb2_pressed = true;
-                    GPIOA->CPU_INT.ICLR = GPIO_CPU_INT_ICLR_DIO15_CLR;
-                }
-                break;
-        }
-    } while (group_gpio_iidx != 0);
+   do {
+      group_gpio_iidx = CPUSS -> INT_GROUP[1].IIDX;
+      switch (group_gpio_iidx) {
+      case (CPUSS_INT_GROUP_IIDX_STAT_INT1): //GPIOB
+         gpio_mis = GPIOB -> CPU_INT.MIS;
+         if ((gpio_mis & GPIO_CPU_INT_MIS_DIO18_MASK) == GPIO_CPU_INT_MIS_DIO18_SET) {
+            g_pb1_pressed = true;
+            GPIOB -> CPU_INT.ICLR = GPIO_CPU_INT_ICLR_DIO18_CLR;
+         }
+         break;
+      case (CPUSS_INT_GROUP_IIDX_STAT_INT0): //GPIOA
+         gpio_mis = GPIOA -> CPU_INT.MIS;
+         if ((gpio_mis & GPIO_CPU_INT_MIS_DIO15_MASK) == GPIO_CPU_INT_MIS_DIO15_SET) {
+            g_pb2_pressed = true;
+            GPIOA -> CPU_INT.ICLR = GPIO_CPU_INT_ICLR_DIO15_CLR;
+         }
+         break;
+      }
+   } while (group_gpio_iidx != 0);
 }
-
-
 
 // -----------------------------------------------------------------------------
 // DESCRIPTION
@@ -320,39 +342,36 @@ int8_t padPress() {
    return ascii;
 }
 
- 
 uint16_t keypad_input() {
-   
 
    lcd_set_ddram_addr(LCD_LINE2_ADDR + LCD_CHAR_POSITION_7);
 
    bool flag = false;
    int8_t count = 0;
    int8_t ascii = 0;
-   char buffer[5] = {0};
+   char buffer[5] = {
+      0
+   };
    char input_char;
 
    while (flag == false) {
 
-
-         if(count < 4){
-            ascii = padPress();
-            msec_delay(DEBOUNCE);
-            if (ascii != 0x10) {
-                buffer[count] = ascii + '0'; //convert integer to character and then put it in array.
-                count++;
-            }
-         } else{
-            flag = true;
+      if (count < 4) {
+         ascii = padPress();
+         msec_delay(DEBOUNCE);
+         if (ascii != 0x10) {
+            buffer[count] = ascii + '0'; //convert integer to character and then put it in array.
+            count++;
          }
+      } else {
+         flag = true;
+      }
+   }
+
+   buffer[count] = '\0';
+   int16_t employeeNum = string_to_uint16(buffer);
+   return employeeNum;
 }
-
-buffer[count] = '\0';
-int16_t employeeNum = string_to_uint16(buffer);
-return employeeNum;
-}
-
-
 
 //-----------------------------------------------------------------------------
 // DESCRIPTION:
@@ -368,47 +387,46 @@ return employeeNum;
 //    int - Parsed integer.
 //-----------------------------------------------------------------------------
 int string_to_uint16(char string[]) {
-    int result = 0;
+   int result = 0;
 
-    while (*string != NULL) {
-        if (*string >= '0' && *string <= '9') {
-            result = result * 10 + (*string - '0');
-        } else {
-            return 0;  // Invalid character
-        }
-        string++;
-    }
-    return result;
+   while ( * string != NULL) {
+      if ( * string >= '0' && * string <= '9') {
+         result = result * 10 + ( * string - '0');
+      } else {
+         return 0; // Invalid character
+      }
+      string++;
+   }
+   return result;
 }
-
 
 //return position code was found as well as if it was found in the first place
-int* checkIfValid(int16_t code){
-    bool code_is_valid = false;
-    int i = 0;
-    while(((i< sizeof(VALIDCODES)) && (code_is_valid == false))){
-        if(VALIDCODES[i] == code){
-            code_is_valid = true;
-        }
-        i++;
-    }
+int * checkIfValid(int16_t code) {
+   bool code_is_valid = false;
+   int i = 0;
+   while (((i < sizeof(VALIDCODES)) && (code_is_valid == false))) {
+      if (VALIDCODES[i] == code) {
+         code_is_valid = true;
+      }
+      i++;
+   }
 
-    int* validCode_and_position = (int*)malloc(2 * sizeof(int)); 
-    
-    validCode_and_position[0] = code_is_valid;
-    validCode_and_position[1] = i - 1;
-    return validCode_and_position;
+   int * validCode_and_position = (int * ) malloc(2 * sizeof(int));
+
+   validCode_and_position[0] = code_is_valid;
+   validCode_and_position[1] = i - 1;
+   return validCode_and_position;
 }
 
-bool admin(){
-    lcd_clear();
-    lcd_set_ddram_addr(LCD_LINE1_ADDR);
-    lcd_write_string("WAIT FOR ADMIN:");
-    int password = keypad_input();
-    bool admin_access = false;
-    int admin_value_index = (sizeof(VALIDCODES) / sizeof(VALIDCODES[0])) - 1;
-    if(password == VALIDCODES[admin_value_index]){
-        admin_access = true;
-    }
-    return admin_access;
+bool admin() {
+   lcd_clear();
+   lcd_set_ddram_addr(LCD_LINE1_ADDR);
+   lcd_write_string("WAIT FOR ADMIN:");
+   int password = keypad_input();
+   bool admin_access = false;
+   int admin_value_index = (sizeof(VALIDCODES) / sizeof(VALIDCODES[0])) - 1;
+   if (password == VALIDCODES[admin_value_index]) {
+      admin_access = true;
+   }
+   return admin_access;
 }

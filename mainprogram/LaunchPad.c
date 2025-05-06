@@ -1129,6 +1129,13 @@ uint8_t dipsw_read(void)
 
 } /* dipsw_read */
 
+uint8_t dipsw_read_pos1(void){
+    int switch_value = ((GPIOB->DIN31_0 & dip_switch_config_data[0].bit_mask) ==
+                       dip_switch_config_data[0].bit_mask);
+    return switch_value;
+}
+
+
 //-----------------------------------------------------------------------------
 // DESCRIPTION:
 //    This function reads the current state of the pushbuttons on the CSC202
