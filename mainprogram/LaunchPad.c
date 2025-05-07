@@ -1071,6 +1071,7 @@ bool is_lpsw_up(uint8_t sw_idx)
 // -----------------------------------------------------------------------------
 void dipsw_init(void)
 {
+    //gpio_pincm is what you want to be enabled in the IO mux
   uint32_t gpio_pincm = IOMUX_PINCM_INENA_ENABLE| IOMUX_PINCM_PC_CONNECTED |
                         PINCM_GPIO_PIN_FUNC | IOMUX_PINCM_INV_MASK;
 
@@ -1078,8 +1079,23 @@ void dipsw_init(void)
   {
     IOMUX->SECCFG.PINCM[dip_switch_config_data[sw_idx].pin_cm] = gpio_pincm;
   }  /* for */
-
+    // iomux 50 port b22
 } /* dipsw_init */
+
+
+void pushButton_init(void)
+{
+    //gpio_pincm is what you want to be enabled in the IO mux
+  uint32_t gpio_pincm = IOMUX_PINCM_INENA_ENABLE| IOMUX_PINCM_PC_CONNECTED |
+                        PINCM_GPIO_PIN_FUNC;
+
+
+    IOMUX->SECCFG.PINCM[49] = gpio_pincm;
+
+    // iomux 50 port b22
+} /* pushButton_init */
+
+
 
 
 //-----------------------------------------------------------------------------
@@ -1128,13 +1144,6 @@ uint8_t dipsw_read(void)
   return (dip_value);
 
 } /* dipsw_read */
-
-uint8_t dipsw_read_pos1(void){
-    int switch_value = ((GPIOB->DIN31_0 & dip_switch_config_data[0].bit_mask) ==
-                       dip_switch_config_data[0].bit_mask);
-    return switch_value;
-}
-
 
 //-----------------------------------------------------------------------------
 // DESCRIPTION:

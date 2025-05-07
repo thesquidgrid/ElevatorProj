@@ -13,7 +13,6 @@ C_SRCS += \
 ../lcd1602.c \
 ../main.c \
 ../spi.c \
-../test.c \
 ../uart.c 
 
 C_DEPS += \
@@ -23,7 +22,6 @@ C_DEPS += \
 ./lcd1602.d \
 ./main.d \
 ./spi.d \
-./test.d \
 ./uart.d 
 
 OBJS += \
@@ -33,7 +31,6 @@ OBJS += \
 ./lcd1602.o \
 ./main.o \
 ./spi.o \
-./test.o \
 ./uart.o 
 
 OBJS__QUOTED += \
@@ -43,7 +40,6 @@ OBJS__QUOTED += \
 "lcd1602.o" \
 "main.o" \
 "spi.o" \
-"test.o" \
 "uart.o" 
 
 C_DEPS__QUOTED += \
@@ -53,7 +49,6 @@ C_DEPS__QUOTED += \
 "lcd1602.d" \
 "main.d" \
 "spi.d" \
-"test.d" \
 "uart.d" 
 
 C_SRCS__QUOTED += \
@@ -63,7 +58,6 @@ C_SRCS__QUOTED += \
 "../lcd1602.c" \
 "../main.c" \
 "../spi.c" \
-"../test.c" \
 "../uart.c" 
 
 
