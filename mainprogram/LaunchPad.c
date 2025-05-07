@@ -1091,6 +1091,7 @@ void pushButton_init(void)
 
 
     IOMUX->SECCFG.PINCM[49] = gpio_pincm;
+    IOMUX->SECCFG.PINCM[56] = gpio_pincm;
 
     // iomux 50 port b22
 } /* pushButton_init */

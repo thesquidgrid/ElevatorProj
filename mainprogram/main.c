@@ -87,6 +87,9 @@ int string_to_uint16(char string[]);
 int * checkIfValid(int16_t code);
 bool admin();
 void config_up_interrupt();
+void config_down_interrupt();
+void floor_picker();
+
 
 int main(void) {
    clock_init_40mhz();
@@ -98,24 +101,29 @@ int main(void) {
    led_init();
    seg7_init();
    keypad_init();
-   
+
    pushButton_init();
    msp_printf("meow", 0);
 
+   ADC0_init(ADC12_MEMCTL_VRSEL_VDDA_VSSA);
+
+   config_pb1_interrupt();
+   config_pb2_interrupt();
    config_up_interrupt();
-
-   while(!g_up_pressed){
-    
-   } 
-
-   g_up_pressed = false;
- 
-   
-
-   bool finishProgramFlag = false;
+   config_down_interrupt();
+   bool up = false; //if false then going down
+   bool down = false;
    int currentLevel = 7; 
+   while(1){
+   if(g_down_pressed || g_up_pressed){ //works on interupts
+        if(g_up_pressed){
+            up = true;
+        }
+        if (g_down_pressed){
+            down = true;
+        }
 
-   while (finishProgramFlag == false) {
+    
       uint8_t attempt_count = 0;
       bool validCode = false;
 
@@ -155,10 +163,9 @@ int main(void) {
          lcd_write_string(EMPLOYEE_NAMES[validCode_and_position[1]]);
          msec_delay(1000);
          lcd_clear();
-         lcd_write_string("Up or Down?");
-
-     
-      }
+         floor_picker();
+   } 
+   }
 
    }
 
@@ -299,6 +306,17 @@ void config_up_interrupt(void) // Credit to you (aka Prof. Link)
    NVIC_SetPriority(GPIOB_INT_IRQn, 2);
    NVIC_EnableIRQ(GPIOB_INT_IRQn);
 }
+
+void config_down_interrupt(void) // Credit to you (aka Prof. Link)
+{
+   GPIOB -> POLARITY31_16 = GPIO_POLARITY31_16_DIO26_RISE;
+   GPIOB -> CPU_INT.ICLR = GPIO_CPU_INT_ICLR_DIO26_CLR;
+
+   GPIOB -> CPU_INT.IMASK = GPIO_CPU_INT_IMASK_DIO26_SET;
+
+   NVIC_SetPriority(GPIOB_INT_IRQn, 2);
+   NVIC_EnableIRQ(GPIOB_INT_IRQn);
+}
 //-----------------------------------------------------------------------------
 // DESCRIPTION:
 //     This function serves as the Interrupt Service Routine (ISR) for the
@@ -328,9 +346,13 @@ void GROUP1_IRQHandler(void) // Credit to you (aka Prof. Link)
          if ((gpio_mis & GPIO_CPU_INT_MIS_DIO18_MASK) == GPIO_CPU_INT_MIS_DIO18_SET) {
             g_pb1_pressed = true;
             GPIOB -> CPU_INT.ICLR = GPIO_CPU_INT_ICLR_DIO18_CLR;
-         } else if((gpio_mis & GPIO_CPU_INT_MIS_DIO22_MASK) == GPIO_CPU_INT_MIS_DIO22_SET) {
+         } if((gpio_mis & GPIO_CPU_INT_MIS_DIO22_MASK) == GPIO_CPU_INT_MIS_DIO22_SET) {
             g_up_pressed = true;
             GPIOB -> CPU_INT.ICLR = GPIO_CPU_INT_ICLR_DIO22_CLR;
+
+         } if((gpio_mis & GPIO_CPU_INT_MIS_DIO26_MASK) == GPIO_CPU_INT_MIS_DIO26_SET) {
+            g_down_pressed = true;
+            GPIOB -> CPU_INT.ICLR = GPIO_CPU_INT_ICLR_DIO26_CLR;
 
          }
          break;
@@ -458,4 +480,65 @@ bool admin() {
       admin_access = true;
    }
    return admin_access;
+}
+
+void floor_picker()
+{
+    uint16_t adc_value = 0;
+    uint16_t adc_start = 0;
+    uint16_t adc_end = 0;
+    char direction = ' ';
+    bool floor_selected = false;
+
+    
+    // Wait for direction selection
+
+
+    lcd_clear();
+    lcd_write_string("Select Floor");
+    msec_delay(500);
+    
+
+    uint16_t previous_floor = 99;  // Invalid floor to force first display
+
+    
+        
+        msec_delay(50);
+        lcd_clear();
+        lcd_set_ddram_addr(LCD_LINE1_ADDR);
+        lcd_write_string("FLOOR: ");
+        lcd_set_ddram_addr(LCD_LINE2_ADDR);
+        lcd_write_string("PB1:CONFIRM");
+        while (!floor_selected)
+    {
+        adc_value = ADC0_in(ADC12_MEMCTL_CHANSEL_CHAN_7);
+        uint16_t selected_floor =  adc_value / 454;
+        if (selected_floor != previous_floor)
+        {
+            previous_floor = selected_floor;
+            lcd_set_ddram_addr(LCD_LINE1_ADDR + LCD_CHAR_POSITION_7);
+            if (selected_floor == 0)
+                lcd_write_string("B");
+            else
+                lcd_write_byte(selected_floor);           
+        }
+
+        if (g_pb1_pressed)
+        {
+            g_pb1_pressed = false;
+            floor_selected = true;
+
+            lcd_clear();
+            lcd_write_string("Traveling to...");
+            lcd_set_ddram_addr(LCD_LINE2_ADDR);
+            if (selected_floor == 0)
+                lcd_write_string("Basement");
+            else
+                lcd_write_byte(selected_floor);
+
+            msec_delay(1500);  // Simulate travel
+        }
+
+        msec_delay(50);  // Smooth responsiveness
+    }
 }
