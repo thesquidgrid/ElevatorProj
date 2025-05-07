@@ -14,6 +14,7 @@ ORDERED_OBJS += \
 "./lcd1602.o" \
 "./main.o" \
 "./spi.o" \
+"./test.o" \
 "./uart.o" \
 "./ticlang/startup_mspm0g3507_ticlang.o" \
 "../mspm0g3507.cmd" \
@@ -148,8 +149,8 @@ mainprogram.out: $(OBJS) $(CMD_SRCS) $(GEN_CMDS)
 # Other Targets
 clean:
 	-$(RM) $(EXE_OUTPUTS__QUOTED)
-	-$(RM) "LaunchPad.o" "adc.o" "clock.o" "lcd1602.o" "main.o" "spi.o" "uart.o" "ticlang/startup_mspm0g3507_ticlang.o" 
-	-$(RM) "LaunchPad.d" "adc.d" "clock.d" "lcd1602.d" "main.d" "spi.d" "uart.d" "ticlang/startup_mspm0g3507_ticlang.d" 
+	-$(RM) "LaunchPad.o" "adc.o" "clock.o" "lcd1602.o" "main.o" "spi.o" "test.o" "uart.o" "ticlang/startup_mspm0g3507_ticlang.o" 
+	-$(RM) "LaunchPad.d" "adc.d" "clock.d" "lcd1602.d" "main.d" "spi.d" "test.d" "uart.d" "ticlang/startup_mspm0g3507_ticlang.d" 
 	-@echo 'Finished clean'
 	-@echo ' '
 

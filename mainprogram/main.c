@@ -44,30 +44,23 @@
 
 #include "uart.h"
 
+#include <string.h>
+
 #define END_CHARACTER ('\0')
 #define SIZE_LIMIT (7)
 #define MAX_ATTEMPTS (3)
 #define RETRY_DELAY_MS (1500)
 #define DEBOUNCE 15
 
-int VALIDCODES[] = {
-   0000,
-   1423,
-   7512,
-   2310,
-   1234,
-   2534,
-   9902
-};
-char EMPLOYEE_NAMES[][16] = {
-   "Sophia Buchman",
-   "Rusquel Ramirez",
-   "Bruce Link",
-   "Tobin Peterson",
-   "Lewis Doyle",
-   "Amy Winehouse",
-   "ADMIN"
-};
+#define FLOOR_1_BIT (1 << 0)
+#define FLOOR_2_BIT (1 << 1)
+#define FLOOR_3_BIT (1 << 2)
+#define FLOOR_4_BIT (1 << 3)
+#define FLOOR_5_BIT (1 << 4)
+#define FLOOR_6_BIT (1 << 5)
+#define FLOOR_7_BIT (1 << 6)
+#define FLOOR_8_BIT (1 << 7)
+#define FLOOR_9_BIT (1 << 8)
 
 
 bool g_pb1_pressed = false;
@@ -124,24 +117,24 @@ int main(void) {
          }
       }
       if (attempt_count == MAX_ATTEMPTS) {
-         //put code that puts you backt to the beginning
+         //put code that puts you back to the beginning
          bool adminAccess = false;
          while (adminAccess == false) {
             adminAccess = admin();
          }
 
-      } else { //continue with program
+      } else { //continue with programW
          lcd_clear();
          lcd_set_ddram_addr(LCD_LINE1_ADDR);
          lcd_write_string("Welcome:");
          lcd_set_ddram_addr(LCD_LINE2_ADDR);
-         lcd_write_string(EMPLOYEE_NAMES[validCode_and_position[1]]);
+         lcd_write_string(nameFromIndex(validCode_and_position[1]));
          msec_delay(1000);
          lcd_clear();
          lcd_write_string("Up or Down?");
          uint8_t up_or_down = dipsw_read_pos1();
          if(up_or_down == 1){
-            
+         
          }
 
       }
@@ -403,18 +396,36 @@ int string_to_uint16(char string[]) {
 //return position code was found as well as if it was found in the first place
 int * checkIfValid(int16_t code) {
    bool code_is_valid = false;
-   int i = 0;
-   while (((i < sizeof(VALIDCODES)) && (code_is_valid == false))) {
-      if (VALIDCODES[i] == code) {
-         code_is_valid = true;
-      }
-      i++;
-   }
-
    int * validCode_and_position = (int * ) malloc(2 * sizeof(int));
+   int i = 0;
+  
+    FILE *fp = fopen("employee-codes.txt", "r");
 
-   validCode_and_position[0] = code_is_valid;
-   validCode_and_position[1] = i - 1;
+
+    if (fp != NULL) {
+        // Read each line from the file and store it in the
+        // 'line' buffer.
+        int counter = 0;
+        int num;
+        while (fscanf(fp, "%d", &num) != EOF) {
+            printf("%d\n", num);
+            counter++;
+            if(num == code){
+                code_is_valid = true;
+            }
+        }
+
+        fclose(file);
+        validCode_and_position[0] = code_is_valid;
+        validCode_and_position[1] = i - 1;
+    } else {
+        // Print an error message to the standard error
+        // stream if the file cannot be opened.
+        printf(stderr, "Unable to open file!\n");
+        validCode_and_position[0] = code_is_valid;
+        validCode_and_position[1] = i - 1;
+    }
+
    return validCode_and_position;
 }
 
@@ -430,3 +441,39 @@ bool admin() {
    }
    return admin_access;
 }
+
+char* nameFromIndex(uint8_t index){
+    FILE* file = fopen("employee-names.txt", "r");
+
+    // Buffer to store each line of the file.
+    char line[256];
+    // Check if the file was opened successfully.
+    if (file != NULL) {
+        // Read each line from the file and store it in the
+        // 'line' buffer.
+        int counter = 0;
+        int i = 0;
+        
+
+        do{
+            fgets(line, sizeof(line), file)
+            printf("%s", line);
+            i++;
+        } while (i < index) {
+            // Print each line to the standard output.
+            fgets(line, sizeof(line), file)
+            printf("%s", line);
+            i++;
+        }
+        // Close the file stream once all lines have been
+        // read.
+        fclose(file);
+    }
+    else {
+        // Print an error message to the standard error
+        // stream if the file cannot be opened.
+        fprintf(stderr, "Unable to open file!\n");
+    }
+    return line;
+}
+
