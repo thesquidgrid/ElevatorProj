@@ -2,7 +2,9 @@
 # Automatically-generated file. Do not edit!
 ################################################################################
 
-CG_TOOL_ROOT := /home/sofa/ti/ccstheia151/ccs/tools/compiler/ti-cgt-armllvm_4.0.0.LTS
+SHELL = cmd.exe
+
+CG_TOOL_ROOT := C:/ti/ccstheia141/ccs/tools/compiler/ti-cgt-armllvm_3.2.2.LTS
 
 GEN_OPTS__FLAG := 
 GEN_CMDS__FLAG := 
@@ -22,8 +24,8 @@ $(GEN_CMDS__FLAG) \
 
 -include ../makefile.init
 
-RM := rm -rf
-RMDIR := rm -rf
+RM := DEL /F
+RMDIR := RMDIR /S/Q
 
 # All of the sources participating in the build are defined here
 -include sources.mk
@@ -141,15 +143,15 @@ all: $(OBJS) $(CMD_SRCS) $(GEN_CMDS)
 mainprogram.out: $(OBJS) $(CMD_SRCS) $(GEN_CMDS)
 	@echo 'Building target: "$@"'
 	@echo 'Invoking: Arm Linker'
-	"/home/sofa/ti/ccstheia151/ccs/tools/compiler/ti-cgt-armllvm_4.0.0.LTS/bin/tiarmclang" -march=thumbv6m -mcpu=cortex-m0plus -mfloat-abi=soft -mlittle-endian -mthumb -O0 -D__MSPM0G3507__ -gdwarf-3 -Wl,-m"mainprogram.map" -Wl,--heap_size=0x800 -Wl,--stack_size=512 -Wl,-i"/home/sofa/ti/mspm0_sdk_2_04_00_06/source" -Wl,-i"/home/sofa/ElevatorProj/mainprogram" -Wl,-i"/home/sofa/ElevatorProj/mainprogram/Debug/syscfg" -Wl,-i"/home/sofa/ti/ccstheia151/ccs/tools/compiler/ti-cgt-armllvm_4.0.0.LTS/lib" -Wl,--diag_wrap=off -Wl,--display_error_number -Wl,--warn_sections -Wl,--xml_link_info="mainprogram_linkInfo.xml" -Wl,--rom_model -o "mainprogram.out" $(ORDERED_OBJS)
+	"C:/ti/ccstheia141/ccs/tools/compiler/ti-cgt-armllvm_3.2.2.LTS/bin/tiarmclang.exe" -march=thumbv6m -mcpu=cortex-m0plus -mfloat-abi=soft -mlittle-endian -mthumb -O0 -D__MSPM0G3507__ -gdwarf-3 -Wl,-m"mainprogram.map" -Wl,--heap_size=0x800 -Wl,--stack_size=512 -Wl,-i"C:/ti/mspm0_sdk_2_01_00_03/source" -Wl,-i"C:/Users/starc/OneDrive/Documents/GitHub/ElevatorProj/mainprogram" -Wl,-i"C:/Users/starc/OneDrive/Documents/GitHub/ElevatorProj/mainprogram/Debug/syscfg" -Wl,-i"C:/ti/ccstheia141/ccs/tools/compiler/ti-cgt-armllvm_3.2.2.LTS/lib" -Wl,--diag_wrap=off -Wl,--display_error_number -Wl,--warn_sections -Wl,--xml_link_info="mainprogram_linkInfo.xml" -Wl,--rom_model -o "mainprogram.out" $(ORDERED_OBJS)
 	@echo 'Finished building target: "$@"'
 	@echo ' '
 
 # Other Targets
 clean:
 	-$(RM) $(EXE_OUTPUTS__QUOTED)
-	-$(RM) "LaunchPad.o" "adc.o" "clock.o" "lcd1602.o" "main.o" "spi.o" "uart.o" "ticlang/startup_mspm0g3507_ticlang.o" 
-	-$(RM) "LaunchPad.d" "adc.d" "clock.d" "lcd1602.d" "main.d" "spi.d" "uart.d" "ticlang/startup_mspm0g3507_ticlang.d" 
+	-$(RM) "LaunchPad.o" "adc.o" "clock.o" "lcd1602.o" "main.o" "spi.o" "uart.o" "ticlang\startup_mspm0g3507_ticlang.o" 
+	-$(RM) "LaunchPad.d" "adc.d" "clock.d" "lcd1602.d" "main.d" "spi.d" "uart.d" "ticlang\startup_mspm0g3507_ticlang.d" 
 	-@echo 'Finished clean'
 	-@echo ' '
 
