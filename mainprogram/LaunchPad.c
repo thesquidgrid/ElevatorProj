@@ -1130,7 +1130,7 @@ void multiplexer_init(void)
 }
 
 uint8_t readMultiplexer(uint8_t index){
-    setMultiplexer(index);
+    setMultiplexer(index); //will end up being 1 or zero 
     uint8_t index_val = ((GPIOA->DIN31_0 & MULTIPLEX_MASK) ==
                        MULTIPLEX_MASK);
     return index_val;

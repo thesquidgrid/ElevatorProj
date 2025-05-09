@@ -200,7 +200,7 @@
 #define DIP_SW4_IOMUX                                            (IOMUX_PINCM37)
 
 // Defines for multiplex:
-#define multiplex_MASK (1<<20) //change to whatever value you want. i dunno yet lol.
+#define MULTIPLEX_MASK (1<<20) //change to whatever value you want. i dunno yet lol.
 
 // Defines for Keypad switches
 #define KP_COL0_PORT                                                (GPIO_PORTB)
