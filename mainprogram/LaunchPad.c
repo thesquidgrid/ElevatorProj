@@ -126,8 +126,18 @@ const gpio_struct lp_switch_config_data[] = {
         {LP_SW2_PORT, LP_SW2_MASK, LP_SW2_IOMUX, ACTIVE_LOW}
 };
 
+
+ 
+
 // Define the configuration data for the switches on the CSC202 Board
 const gpio_struct dip_switch_config_data[] = {
+        {DIP_SW1_PORT, DIP_SW1_MASK, DIP_SW1_IOMUX, ACTIVE_LOW},
+        {DIP_SW2_PORT, DIP_SW2_MASK, DIP_SW2_IOMUX, ACTIVE_LOW},
+        {DIP_SW3_PORT, DIP_SW3_MASK, DIP_SW3_IOMUX, ACTIVE_LOW},
+        {DIP_SW4_PORT, DIP_SW4_MASK, DIP_SW4_IOMUX, ACTIVE_LOW}
+};
+
+const gpio_struct multiplex_config_data[] = {
         {DIP_SW1_PORT, DIP_SW1_MASK, DIP_SW1_IOMUX, ACTIVE_LOW},
         {DIP_SW2_PORT, DIP_SW2_MASK, DIP_SW2_IOMUX, ACTIVE_LOW},
         {DIP_SW3_PORT, DIP_SW3_MASK, DIP_SW3_IOMUX, ACTIVE_LOW},
@@ -1096,7 +1106,56 @@ void pushButton_init(void)
     // iomux 50 port b22
 } /* pushButton_init */
 
+void multiplexer_init(void)
+{  //INPUT PIN
+    //gpio_pincm is what you want to be enabled in the IO mux
+  uint32_t gpio_pincm = IOMUX_PINCM_INENA_ENABLE| IOMUX_PINCM_PC_CONNECTED |
+  PINCM_GPIO_PIN_FUNC | IOMUX_PINCM_INV_MASK; //invert mask because need to invert value
+  
+  IOMUX->SECCFG.PINCM[49] = gpio_pincm; //set proper value
 
+  //3 OUTPUT DATA SELECT PINS:
+  //D0
+  IOMUX->SECCFG.PINCM[00] = (IOMUX_PINCM_PC_CONNECTED | //put in pin you want
+                      IOMUX_PINCM23_PF_GPIOB_DIO01);
+  GPIOB->DOE31_0 |= GPIO_DOE31_0_DIO1_ENABLE; //enable dout
+  //D1
+  IOMUX->SECCFG.PINCM[01] = (IOMUX_PINCM_PC_CONNECTED | //put in pin you want
+                      IOMUX_PINCM23_PF_GPIOB_DIO02);
+  GPIOB->DOE31_0 |= GPIO_DOE31_0_DIO2_ENABLE; //enable dout
+  //D3
+  IOMUX->SECCFG.PINCM[02] = (IOMUX_PINCM_PC_CONNECTED | //put in pin you want
+                      IOMUX_PINCM23_PF_GPIOB_DIO03);
+  GPIOB->DOE31_0 |= GPIO_DOE31_0_DIO3_ENABLE; //enable dout
+}
+
+uint8_t readMultiplexer(uint8_t index){
+    setMultiplexer(index);
+    uint8_t index_val = ((GPIOA->DIN31_0 & MULTIPLEX_MASK) ==
+                       MULTIPLEX_MASK);
+    return index_val;
+    
+}
+
+void setMultiplexer(uint8_t index){
+    int d2_bitmask = 0x04;
+    int d1_bitmask = 0x02;
+    int d0_bitmask = 0x01
+    int bitmasks[] = {d2_bitmask , d1_bitmask, d0_bitmask};
+    int maskSet[] = {GPIO_DOE31_02_DIO02_MASK , GPIO_DOE31_0_DIO01_MASK, GPIO_DOE31_0_DIO2_MASK}
+    if(index > 0x07){
+        index = 0x00;
+    }
+
+    for(int i = 0; i< 3, i++){
+        if(bitmasks[i] & index == 1){ //checks inputed index matches the bitmask. if not, clear the value
+            GPIOB->DOUT31_0 |= maskSet[i];
+        } else{
+            GPIOB->DOUT31_0 &= ~maskSet[i]; //bit clear
+        }
+    }
+
+}
 
 
 //-----------------------------------------------------------------------------
