@@ -304,4 +304,6 @@ void motor0_pwm_disable(void);
 void motor0_set_pwm_dc(uint8_t duty_cycle);
 void motor0_set_pwm_count(uint32_t count);
 
+void setMultiplexer(uint8_t index);
+
 #endif // __LAUNCHPAD_H__
