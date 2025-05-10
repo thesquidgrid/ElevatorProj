@@ -70,6 +70,7 @@ int main(void) {
 
     if (access_code())
     {
+        led_enable();
         floor_picker();
     }
 
@@ -274,7 +275,7 @@ void floor_picker()
     uint16_t adc_start = 0;
     uint16_t adc_end = 0;
     char direction = ' ';
-    bool floor_selected = false;
+    uint16_t previous_floor = 99;
 
     lcd_clear();
     lcd_set_ddram_addr(LCD_LINE1_ADDR);
@@ -282,22 +283,21 @@ void floor_picker()
     lcd_set_ddram_addr(LCD_LINE2_ADDR);
     lcd_write_string("PB1:UP PB2:DOWN");
 
-    // Wait for direction selection
     while (direction == ' ')
     {
         if (g_pb1_pressed)
         {
             g_pb1_pressed = false;
+            direction = 'U';
             adc_start = 6;
             adc_end = 10;
-            direction = 'U';
         }
         else if (g_pb2_pressed)
         {
             g_pb2_pressed = false;
+            direction = 'D';
             adc_start = 0;
             adc_end = 4;
-            direction = 'D';
         }
     }
 
@@ -306,9 +306,7 @@ void floor_picker()
     msec_delay(500);
     lcd_clear();
 
-    uint16_t previous_floor = 99;  // Invalid floor to force first display
-
-    while (!floor_selected)
+    while (1)
     {
         adc_value = ADC0_in(7);
         uint16_t range = adc_end - adc_start + 1;
@@ -333,7 +331,6 @@ void floor_picker()
         if (g_pb1_pressed)
         {
             g_pb1_pressed = false;
-            floor_selected = true;
 
             lcd_clear();
             lcd_write_string("Traveling to...");
@@ -343,11 +340,56 @@ void floor_picker()
             else
                 lcd_write_byte(selected_floor);
 
-            msec_delay(1500);  // Simulate travel
-        }
+            leds_off();
+            msec_delay(250);
 
-        msec_delay(50);  // Smooth responsiveness
+            if (direction == 'D')  // Going DOWN
+            {
+                // LED 1 = floor 5 (main floor)
+                led_on(1);
+                msec_delay(300);
+                led_off(1);
+
+                for (int floor = 4; floor >= (int)selected_floor; floor--)
+                {
+                    int led = 5 - floor + 1;  // Floor 4 = LED 2, Floor 3 = LED 3, etc.
+                    led_on(led);
+                    msec_delay(300);
+                    led_off(led);
+                }
+
+                if (selected_floor == 0)
+                {
+                    led_on(6);  // Basement LED
+                    msec_delay(400);
+                }
+            }
+            else if (direction == 'U')  // Going UP
+            {
+                // LED 9 = floor 5 (main floor)
+                led_on(9);
+                msec_delay(300);
+                led_off(9);
+
+                for (int floor = 6; floor <= (int)selected_floor; floor++)
+                {
+                    int led = 11 - floor;  // Floor 6 = LED 8, Floor 10 = LED 4
+                    led_on(led);
+                    msec_delay(300);
+                    led_off(led);
+                }
+            }
+
+            msec_delay(300);
+            leds_off();
+            return;
+        }
     }
 }
+
+
+
+
+
 
 
