@@ -200,7 +200,7 @@
 #define DIP_SW4_IOMUX                                            (IOMUX_PINCM37)
 
 // Defines for multiplex:
-#define MULTIPLEX_MASK (1<<20) //change to whatever value you want. i dunno yet lol.
+#define MULTIPLEX_MASK (1) //change to whatever value you want. i dunno yet lol.
 
 // Defines for Keypad switches
 #define KP_COL0_PORT                                                (GPIO_PORTB)
@@ -303,6 +303,10 @@ void motor0_pwm_enable(void);
 void motor0_pwm_disable(void);
 void motor0_set_pwm_dc(uint8_t duty_cycle);
 void motor0_set_pwm_count(uint32_t count);
+
+void fwd(int speed);
+void rev(int speed);
+void motor_break(void);
 
 void setMultiplexer(uint8_t index);
 

@@ -47,8 +47,11 @@
 //-----------------------------------------------------------------------------
 // Load standard C include files
 //-----------------------------------------------------------------------------
+
 #include <stdint.h>
 #include <stdio.h>
+#include <stdlib.h>
+
 
 //-----------------------------------------------------------------------------
 // Loads MSP launchpad board support macros and definitions
@@ -1092,7 +1095,6 @@ void pushButton_init(void)
   uint32_t gpio_pincm = IOMUX_PINCM_INENA_ENABLE| IOMUX_PINCM_PC_CONNECTED |
                         PINCM_GPIO_PIN_FUNC;
 
-
     IOMUX->SECCFG.PINCM[49] = gpio_pincm;
     IOMUX->SECCFG.PINCM[56] = gpio_pincm;
 
@@ -1101,31 +1103,38 @@ void pushButton_init(void)
 
 void multiplexer_init(void)
 {  //INPUT PIN
+   //PB 0
     //gpio_pincm is what you want to be enabled in the IO mux
   uint32_t gpio_pincm = IOMUX_PINCM_INENA_ENABLE| IOMUX_PINCM_PC_CONNECTED |
   PINCM_GPIO_PIN_FUNC | IOMUX_PINCM_INV_MASK; //invert mask because need to invert value
   
-  IOMUX->SECCFG.PINCM[49] = gpio_pincm; //set proper value
+  IOMUX->SECCFG.PINCM[11] = gpio_pincm; 
 
   //3 OUTPUT DATA SELECT PINS:
-  //D0
-  IOMUX->SECCFG.PINCM[00] = (IOMUX_PINCM_PC_CONNECTED | //put in pin you want
-                      IOMUX_PINCM12_PF_GPIOB_DIO00);
-  GPIOB->DOE31_0 |= GPIO_DOE31_0_DIO1_ENABLE; //enable dout
-  //D1
-  IOMUX->SECCFG.PINCM[01] = (IOMUX_PINCM_PC_CONNECTED | //put in pin you want
-                      IOMUX_PINCM15_PF_GPIOB_DIO02);
-  GPIOB->DOE31_0 |= GPIO_DOE31_0_DIO2_ENABLE; //enable dout
-  //D3
-  IOMUX->SECCFG.PINCM[02] = (IOMUX_PINCM_PC_CONNECTED | //put in pin you want
-                      IOMUX_PINCM16_PF_GPIOB_DIO03);
-  GPIOB->DOE31_0 |= GPIO_DOE31_0_DIO3_ENABLE; //enable dout
+  //D0 pb6
+  IOMUX->SECCFG.PINCM[22] = (IOMUX_PINCM_PC_CONNECTED | PINCM_GPIO_PIN_FUNC |
+                      IOMUX_PINCM23_PF_GPIOB_DIO06);  
+
+  GPIOB->DOUT31_0 = GPIO_DOE31_0_DIO6_MASK; 
+
+  
+  //D1 pb7
+  IOMUX->SECCFG.PINCM[23] = (IOMUX_PINCM_PC_CONNECTED | PINCM_GPIO_PIN_FUNC |
+                      IOMUX_PINCM24_PF_GPIOB_DIO07);
+  GPIOB->DOE31_0 |= GPIO_DOE31_0_DIO7_MASK;
+  //D3 pb8
+  IOMUX->SECCFG.PINCM[24] = (IOMUX_PINCM_PC_CONNECTED | PINCM_GPIO_PIN_FUNC |
+                      IOMUX_PINCM25_PF_GPIOB_DIO08);
+  GPIOB->DOE31_0 |= GPIO_DOE31_0_DIO8_MASK; 
 }
 
 uint8_t readMultiplexer(uint8_t index){
+    if(index > 0x07){
+        index = 0x00;
+    }
     setMultiplexer(index); //will end up being 1 or zero 
-    uint8_t index_val = ((GPIOA->DIN31_0 & MULTIPLEX_MASK) ==
-                       MULTIPLEX_MASK);
+    //will be zero if off and will be one if on
+    uint8_t index_val = ((GPIOB->DIN31_0 & GPIO_DIN31_0_DIO21_MASK) == MULTIPLEX_MASK); //chekcs if DIN31_0 is set at certain index
     return index_val;
     
 }
@@ -1135,7 +1144,7 @@ void setMultiplexer(uint8_t index){
     int d1_bitmask = 0x02;
     int d0_bitmask = 0x01;
     int bitmasks[] = {d2_bitmask , d1_bitmask, d0_bitmask};
-    int maskSet[] = {GPIO_DOE31_0_DIO2_MASK , GPIO_DOE31_0_DIO1_MASK, GPIO_DOE31_0_DIO2_MASK};
+    int maskSet[] = {GPIO_DOE31_0_DIO6_MASK , GPIO_DOE31_0_DIO7_MASK, GPIO_DOE31_0_DIO8_MASK};
    
     if(index > 0x07){
         index = 0x00;
@@ -1741,17 +1750,49 @@ void motor0_init(void)
                                     IOMUX_PINCM_PC_CONNECTED;
   GPIOA->DOESET31_0 = LED0_MASK;
 
-  // Set PA31 (LD1) for output
-  IOMUX->SECCFG.PINCM[LED1_IOMUX] = PINCM_GPIO_PIN_FUNC | 
+  // Set PA27 (LD1) for output
+  IOMUX->SECCFG.PINCM[59] = PINCM_GPIO_PIN_FUNC | 
                                     IOMUX_PINCM_PC_CONNECTED;
-  GPIOA->DOESET31_0 = LED1_MASK;
+  GPIOA->DOESET31_0 = GPIO_DOE31_0_DIO27_MASK;
 
-  // Set PB20 (LD2) for output
-  IOMUX->SECCFG.PINCM[LED2_IOMUX] = PINCM_GPIO_PIN_FUNC | 
+  // Set PA28 (LD2) for output
+  IOMUX->SECCFG.PINCM[2] = PINCM_GPIO_PIN_FUNC | 
                                     IOMUX_PINCM_PC_CONNECTED;
-  GPIOA->DOESET31_0 = LED2_MASK;
-
+  GPIOA->DOESET31_0 = GPIO_DOE31_0_DIO28_MASK;
 } /* motor0_init */
+
+void drive(int speed){
+    
+    if (speed>=0){
+        fwd(speed);
+    }
+    else {
+        rev(-speed);
+    }
+}
+
+void fwd(int speed){
+   GPIOA->DOUT31_0 |= GPIO_DOE31_0_DIO27_MASK; //set to 1
+   GPIOA->DOUT31_0 &= ~GPIO_DOE31_0_DIO28_MASK; //set to 0
+   if((speed > 100) || (speed < 1)){
+      speed = 50;
+   }
+   motor0_set_pwm_dc(speed);
+}
+
+void rev(int speed){
+   GPIOA->DOUT31_0 &= ~GPIO_DOE31_0_DIO27_MASK; //set to 0
+   GPIOA->DOUT31_0 |= GPIO_DOE31_0_DIO28_MASK; //set to 1
+   if((speed > 100) || (speed < 1)){
+      speed = 50;
+   }
+   motor0_set_pwm_dc(speed);
+}
+
+void motor_break(void){
+    motor0_set_pwm_dc(0);
+}
+
 
 
 //-----------------------------------------------------------------------------
