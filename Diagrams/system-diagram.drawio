@@ -59,19 +59,14 @@
         <mxCell id="fW85EFeijCsHItw4bJKT-22" value="User Inputs employee code onto keypad LCD prompt&#39;s &quot;please input your employee number Door starts closed." style="rounded=0;whiteSpace=wrap;html=1;" parent="1" vertex="1">
           <mxGeometry x="425" y="-30" width="120" height="115" as="geometry" />
         </mxCell>
-        <mxCell id="fW85EFeijCsHItw4bJKT-31" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" parent="1" source="fW85EFeijCsHItw4bJKT-25" target="fW85EFeijCsHItw4bJKT-27" edge="1">
-          <mxGeometry relative="1" as="geometry" />
+        <mxCell id="fW85EFeijCsHItw4bJKT-25" value="LCD PROMPT: please choose what floor using the 4X4 Matrix" style="rounded=0;whiteSpace=wrap;html=1;" parent="1" vertex="1">
+          <mxGeometry x="429.99" y="530" width="120" height="120" as="geometry" />
         </mxCell>
-        <mxCell id="fW85EFeijCsHItw4bJKT-25" value="LCD PROMPT: please choose what floor using the turnkey" style="rounded=0;whiteSpace=wrap;html=1;" parent="1" vertex="1">
-          <mxGeometry x="430" y="430" width="120" height="120" as="geometry" />
-        </mxCell>
-        <mxCell id="fW85EFeijCsHItw4bJKT-34" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" parent="1" source="fW85EFeijCsHItw4bJKT-27" target="fW85EFeijCsHItw4bJKT-37" edge="1">
+        <mxCell id="fW85EFeijCsHItw4bJKT-34" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0.5;entryY=0;entryDx=0;entryDy=0;exitX=0.5;exitY=1;exitDx=0;exitDy=0;" parent="1" source="fW85EFeijCsHItw4bJKT-25" target="fW85EFeijCsHItw4bJKT-37" edge="1">
           <mxGeometry relative="1" as="geometry">
             <mxPoint x="489.9949999999999" y="770" as="targetPoint" />
+            <mxPoint x="489.99" y="729.9910344827586" as="sourcePoint" />
           </mxGeometry>
-        </mxCell>
-        <mxCell id="fW85EFeijCsHItw4bJKT-27" value="User selects floor using turnkey" style="rhombus;whiteSpace=wrap;html=1;" parent="1" vertex="1">
-          <mxGeometry x="417.5" y="600" width="145" height="130" as="geometry" />
         </mxCell>
         <mxCell id="fW85EFeijCsHItw4bJKT-40" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" parent="1" source="fW85EFeijCsHItw4bJKT-37" target="fW85EFeijCsHItw4bJKT-39" edge="1">
           <mxGeometry relative="1" as="geometry" />
@@ -91,7 +86,7 @@
         <mxCell id="fW85EFeijCsHItw4bJKT-41" value="When user gets to their destination, servo motor turns up and light turns green for 10 seconds" style="rounded=0;whiteSpace=wrap;html=1;" parent="1" vertex="1">
           <mxGeometry x="429.99" y="1160" width="120" height="100" as="geometry" />
         </mxCell>
-        <mxCell id="fW85EFeijCsHItw4bJKT-44" value="After 10 seconds, light turns red and servo goes back to closed position. " style="rounded=0;whiteSpace=wrap;html=1;" parent="1" vertex="1">
+        <mxCell id="fW85EFeijCsHItw4bJKT-44" value="After 10 seconds, light turns red program restarts " style="rounded=0;whiteSpace=wrap;html=1;" parent="1" vertex="1">
           <mxGeometry x="429.99" y="1380" width="120" height="100" as="geometry" />
         </mxCell>
         <mxCell id="fW85EFeijCsHItw4bJKT-50" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0;entryY=0.435;entryDx=0;entryDy=0;entryPerimeter=0;exitX=0;exitY=0.5;exitDx=0;exitDy=0;" parent="1" source="fW85EFeijCsHItw4bJKT-44" edge="1">
@@ -104,14 +99,11 @@
             </Array>
           </mxGeometry>
         </mxCell>
-        <mxCell id="q5MYbPizB6dAkKOQLBqU-3" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" edge="1" parent="1" source="q5MYbPizB6dAkKOQLBqU-2" target="fW85EFeijCsHItw4bJKT-22">
+        <mxCell id="q5MYbPizB6dAkKOQLBqU-3" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" parent="1" source="q5MYbPizB6dAkKOQLBqU-2" target="fW85EFeijCsHItw4bJKT-22" edge="1">
           <mxGeometry relative="1" as="geometry" />
         </mxCell>
-        <mxCell id="q5MYbPizB6dAkKOQLBqU-2" value="Waits for user to press up or down button" style="rounded=0;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+        <mxCell id="q5MYbPizB6dAkKOQLBqU-2" value="Waits for user to press up or down button" style="rounded=0;whiteSpace=wrap;html=1;" parent="1" vertex="1">
           <mxGeometry x="425" y="-260" width="120" height="115" as="geometry" />
-        </mxCell>
-        <mxCell id="q5MYbPizB6dAkKOQLBqU-4" value="interrupt driven. events only happen if there is an interrupt associated with it." style="text;html=1;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;" vertex="1" parent="1">
-          <mxGeometry x="150" y="-130" width="60" height="30" as="geometry" />
         </mxCell>
       </root>
     </mxGraphModel>
